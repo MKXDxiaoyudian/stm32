@@ -27,16 +27,18 @@ VS Code 里打开**单个工程目录**（不是这个仓库根目录），然�
 
 ## 新增一个工程时
 
-1. CubeMX 新建工程，**Toolchain/IDE 选 `CMake`**，Project Name 就是工程名（它决定 `.elf` 的名字）。
-2. 生成后把这三样从 `new/` 抄进新工程（CubeMX 不生成它们）：
-   `.vscode/`、`.clangd`、`.gitignore`、`openocd.cfg`。
-3. **不要**复制 `.git/` 和 `.settings/`：前者会让新工程挂到旧仓库的历史上，后者是本机 STM32Cube 扩展的状态文件。
-4. **不要**直接复制 `CMakeLists.txt` —— 它里面 `set(CMAKE_PROJECT_NAME <名字>)` 写死了工程名，抄过来 `.elf` 就是别人的名字。
-   而且 CubeMX 只在**第一次**生成这个文件，之后 `GENERATE CODE` 不会覆盖它，改错了只能手改。
-5. 抄完 `.vscode/` 后，把 `tasks.json` 和 `launch.json` 里所有 `<旧工程名>.elf` 换成新工程名（**两个文件都要改**，
-   `tasks.json` 那行漏改的话 `DAPLink Flash` 会报找不到文件）。
-6. `LibraryCopy` 建议保持 **`Copy only the necessary library files`**（`.ioc` 里 `ProjectManager.LibraryCopy=1`）。
-   选成 `0`（copy all）会让 `Drivers/` 从 3.6 MB 膨胀到 **67 MB**。
+📖 **完整步骤看 [`新建工程指南.md`](新建工程指南.md)** —— 那里把 CubeMX 生成的文件分成三类（每次重写的 / 只生成一次的 / 完全不生成的），
+逐条讲清哪些要抄、哪些千万别抄。这里只放最要命的几条：
+
+1. CubeMX 新建工程，**Toolchain/IDE 必须选 `CMake`**，Project Name 就是工程名（它决定 `.elf` 的名字）。
+2. 生成后**第一件事**：`grep -n CMAKE_PROJECT_NAME CMakeLists.txt`，确认是新工程名。
+   这个文件 CubeMX 只在**第一次**生成，之后 `GENERATE CODE` 永不覆盖 —— 抄错只能手改。
+3. **不要**复制 `.git/`、`.settings/`、`build/`、`CMakeLists.txt`。
+4. 从 `new/` 抄这些（CubeMX 完全不生成）：`.vscode/`、`.clangd`、`.gitignore`、`openocd.cfg`，
+   然后 `grep -rn "\.elf" .vscode/` 把旧工程名的 `.elf` 全换掉（`tasks.json` 和 `launch.json` **两个都要改**）。
+5. Code Generator 里保持 **`Copy only the necessary library files`**（`.ioc` 中 `ProjectManager.LibraryCopy=1`），
+   选成 `0` 会让 `Drivers/` 从 3.6 MB 膨胀到 **67 MB**。
+6. SYS → Debug 选 **Serial Wire**（默认 `No Debug` 时 PA13/PA14 不登记，误配成 GPIO 就再也连不上调试器）。
 
 ## 注意点
 
