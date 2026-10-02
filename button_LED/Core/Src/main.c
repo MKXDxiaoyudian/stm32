@@ -71,12 +71,14 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
+  
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
 
   /* Configure the system clock */
+  //MX_GPIO_Init();
+
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
@@ -86,7 +88,7 @@ int main(void)
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
    __HAL_RCC_GPIOC_CLK_ENABLE();//时钟使能函数
-   //__HAL_RCC_GPIOA_CLK_ENABLE();//时钟使能函数
+   __HAL_RCC_GPIOA_CLK_ENABLE();//时钟使能函数
     GPIO_InitTypeDef GPIO_InitStructure;//定义GPIO初始化结构体
     GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStructure.Pin = GPIO_PIN_13;
@@ -99,7 +101,7 @@ int main(void)
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);//设置引脚13为高电平，关灯
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);//设置引脚13为低电平，开灯
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);//设置引脚0为高电平，关灯
-    //HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
 
   /* USER CODE END 2 */
 

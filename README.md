@@ -52,14 +52,21 @@ cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
 2. 生成后**第一件事**：`grep -n CMAKE_PROJECT_NAME CMakeLists.txt`，确认是新工程名。
    这个文件 CubeMX 只在**第一次**生成，之后 `GENERATE CODE` 永不覆盖 —— 抄错只能手改。
 3. **不要**复制 `.git/`、`.settings/`、`build/`、`CMakeLists.txt`。
-4. 从 `new/` 抄这些（CubeMX 完全不生成）：`.vscode/`、`.clangd`、`.gitignore`、`openocd.cfg`，
+4. 从 `new/` 抄这些（CubeMX 完全不生成）：`.vscode/`、`.gitignore`、`openocd.cfg`，
    然后 `grep -rn "\.elf" .vscode/` 把旧工程名的 `.elf` 全换掉（`tasks.json` 和 `launch.json` **两个都要改**）。
+   （`.clangd` 不用抄，VS Code 扩展会生成 —— 见指南 D 类）
 5. Code Generator 里保持 **`Copy only the necessary library files`**（`.ioc` 中 `ProjectManager.LibraryCopy=1`），
    选成 `0` 会让 `Drivers/` 从 3.6 MB 膨胀到 **67 MB**。
 6. SYS → Debug 选 **Serial Wire** ⭐ **这条不改会锁死芯片**：CubeMX 默认的 `No Debug`
    会让 `HAL_MspInit()` 生成 `__HAL_AFIO_REMAP_SWJ_DISABLE()`（每次开机都关掉 SWD+JTAG），
    固件烧进去后 openocd 永远报 `cannot read IDR`，只能靠 BOOT0 或按住 RESET 抢救。
-   详见 [`新建工程指南.md`](新建工程指南.md) 第三节第 7 条。
+7. 生成后除了查 `.elf` 名字，**还要查调试口**：
+   `grep -n "AFIO_REMAP_SWJ" Core/Src/stm32f1xx_hal_msp.c`，出现 `SWJ_DISABLE` 就是上面第 6 条没配对。
+8. `openocd.cfg` 里的 `reset_config` 必须和接线一致：**没接 nRESET 就用 `reset_config none`**，
+   写 `srst_only` 会让烧录报 `Unable to reset target`（本仓库当前就是 `none`）。
+
+> 完整流程（含**必做 / 可做可不做**分档、可逐条打勾的总表）见
+> [`新建工程指南.md`](新建工程指南.md) 第三节；踩坑记录在第四节第 7 条。
 
 ## 注意点
 
