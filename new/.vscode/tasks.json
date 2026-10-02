@@ -71,6 +71,10 @@
     },
     {
       // ⭐ 烧录：一键 = 先编译 Release，再用 DAP 写入（2026-08-02 就是用这个点亮的板载 PC13）
+      // ⚠️ 2026-10-02 修正：以前这里写的是两个 -f（interface + target），等于**绕过了 openocd.cfg**，
+      //    把 openocd.cfg 里一个会让烧录失败的 reset_config 藏了好几周。
+      //    现在只加载工程自己的 openocd.cfg（它 source 了 interface + target、pin 了 DAP 的 vid:pid、
+      //    并且 reset_config none）。和 F5 调试用的是同一份配置。
       "label": "DAPLink Flash",
       "type": "shell",
       "dependsOn": [
@@ -80,9 +84,7 @@
       "command": "openocd",
       "args": [
         "-f",
-        "interface/cmsis-dap.cfg",
-        "-f",
-        "target/stm32f1x.cfg",
+        "${workspaceFolder}/openocd.cfg",
         "-c",
         "program ${workspaceFolder}/build/Release/new.elf verify reset exit"
       ],
@@ -95,9 +97,7 @@
       "command": "openocd",
       "args": [
         "-f",
-        "interface/cmsis-dap.cfg",
-        "-f",
-        "target/stm32f1x.cfg",
+        "${workspaceFolder}/openocd.cfg",
         "-c",
         "init; exit"
       ],

@@ -56,7 +56,10 @@ cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
    然后 `grep -rn "\.elf" .vscode/` 把旧工程名的 `.elf` 全换掉（`tasks.json` 和 `launch.json` **两个都要改**）。
 5. Code Generator 里保持 **`Copy only the necessary library files`**（`.ioc` 中 `ProjectManager.LibraryCopy=1`），
    选成 `0` 会让 `Drivers/` 从 3.6 MB 膨胀到 **67 MB**。
-6. SYS → Debug 选 **Serial Wire**（默认 `No Debug` 时 PA13/PA14 不登记，误配成 GPIO 就再也连不上调试器）。
+6. SYS → Debug 选 **Serial Wire** ⭐ **这条不改会锁死芯片**：CubeMX 默认的 `No Debug`
+   会让 `HAL_MspInit()` 生成 `__HAL_AFIO_REMAP_SWJ_DISABLE()`（每次开机都关掉 SWD+JTAG），
+   固件烧进去后 openocd 永远报 `cannot read IDR`，只能靠 BOOT0 或按住 RESET 抢救。
+   详见 [`新建工程指南.md`](新建工程指南.md) 第三节第 7 条。
 
 ## 注意点
 

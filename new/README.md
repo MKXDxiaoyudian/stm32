@@ -27,6 +27,8 @@
 | OLED `SCL` / `SDA` | **PB6 / PB7** | 与 MPU6050 共用同一条 I2C1 |
 | DAP `SWDIO` | **PA13** | 加 GND 与 3.3 V |
 | DAP `SWCLK` | **PA14** | |
+| DAP `nRESET` | *(未接)* | **当前没接**。所以 `openocd.cfg` 里必须是 `reset_config none`（用软件复位），
+写 `srst_only` 会让烧录报 `Unable to reset target`。接上它的话，芯片被固件关掉 SWD 后能一键救回来 |
 | 板载 LED | **PC13** | **低电平点亮**（板子自带，无需外接） |
 
 > GY-521 与 OLED 模块板上自带 4.7 k 上拉，不用另加电阻。
@@ -53,13 +55,19 @@
 # 编译（需要 arm-none-eabi-gcc 在 PATH，或直接用 VS Code 任务）
 cmake --build build/Release
 
-# 烧录（openocd 0.12 + CMSIS-DAP）
-openocd -f interface/cmsis-dap.cfg -f target/stm32f1x.cfg \
-        -c "program build/Release/new.elf verify reset exit"
+# 烧录（openocd 0.12 + CMSIS-DAP）—— 用工程自己的 openocd.cfg，和 VS Code 任务、F5 调试同一份配置
+openocd -f openocd.cfg -c "program build/Release/new.elf verify reset exit"
 
 # 只连不烧（注意：exit 必须在 init 之后，单写 -c "exit" 一定报错）
-openocd -f interface/cmsis-dap.cfg -f target/stm32f1x.cfg -c "init; exit"
+openocd -f openocd.cfg -c "init; exit"
 ```
+
+> ⚠️ **2026-10-02 修正**：这里以前写的是 `-f interface/cmsis-dap.cfg -f target/stm32f1x.cfg`，
+> 和 `openocd.cfg` 是两套写法。而 `openocd.cfg` 里那行 `reset_config srst_only srst_nogate`
+> （要求只用物理 nRESET 复位，可本工程 **nRESET 没接**）会让烧录报
+> `timed out while waiting for target halted` / `** Unable to reset target **`。
+> 因为任务恰好绕过了这个文件，这个 bug 藏了好几周。现已统一为 `-f openocd.cfg`，
+> 并把那行改成 `reset_config none`（走 DAP 软件复位）。
 
 ## 工具链（本工程实际使用的版本）
 
