@@ -1,0 +1,9 @@
+# 构建产物（可随时重新生成）
+build/
+mx.scratch
+
+# macOS
+.DS_Store
+
+# 本机 CMake 覆写（不跟工程走）
+CMakeUserPresets.json

@@ -1,0 +1,62 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // 默认构建（Ctrl+Shift+B）。2026-09-25 验证：本机 cmake 4.4.0 直接可用，不需要 cube-cmake
+      "label": "Build",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/Release"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      // 调试用的 Debug 构建（F5 会先跑这个）
+      "label": "Build Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/Debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // ⭐ 烧录：一键 = 先编译 Release，再用 DAP 写入（2026-08-02 就是用这个点亮的板载 PC13）
+      "label": "DAPLink Flash",
+      "type": "shell",
+      "dependsOn": "Build",
+      "command": "openocd",
+      "args": [
+        "-f",
+        "interface/cmsis-dap.cfg",
+        "-f",
+        "target/stm32f1x.cfg",
+        "-c",
+        "program ${workspaceFolder}/build/Release/button_LED.elf verify reset exit"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // 只连接、不烧写：用来确认 DAP 插好了、芯片认到了
+      "label": "DAPLink 探测（只连不烧）",
+      "type": "shell",
+      "command": "openocd",
+      "args": [
+        "-f",
+        "interface/cmsis-dap.cfg",
+        "-f",
+        "target/stm32f1x.cfg",
+        "-c",
+        "init; exit"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}
