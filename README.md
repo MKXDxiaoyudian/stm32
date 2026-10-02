@@ -16,14 +16,32 @@
 
 ## 每个工程怎么构建
 
+**推荐：全程在 VS Code 里做，不用开终端。** 打开**单个工程目录**（不是这个仓库根目录），然后：
+
+| 操作 | 怎么按 |
+|---|---|
+| 编译 Release | `⌘⇧B`（任务 `Build`，已经自动带 configure） |
+| 编译 + 烧录 | `⇧⌘P → Tasks: Run Task → DAPLink Flash` |
+| 调试 | `F5`（自动先编 Debug） |
+| 只探测芯片连没连上 | `Tasks: Run Task → DAPLink 探测（只连不烧）` |
+| 换 preset / 单独 configure | 底部状态栏点 CMake Tools 的 preset（`Debug` / `Release`） |
+| CMake 缓存出邪门问题 | `Tasks: Run Task → 从零重建（删 build 重配）` |
+
+2026-10-02 起 `Build` 任务会**先自动 Configure 再 Build**，所以新 clone 下来（还没有 `build/` 目录）直接 `⌘⇧B` 就能过，
+不需要先回终端敲一遍 configure。
+
+命令行等价（CI 或不想开 VS Code 时用）：
+
 ```bash
 cd <工程目录>
-cmake --preset Debug         # 首次必须先 configure，否则 build/ 不存在
-cmake --preset Release
+cmake --preset Release       # configure（首次必须，否则 build/ 不存在）
 cmake --build build/Release  # 产物：build/Release/<工程名>.elf
+cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
 ```
 
-VS Code 里打开**单个工程目录**（不是这个仓库根目录），然后：`⌘⇧B` 编译、`⇧⌘P → Tasks: Run Task → DAPLink Flash` 烧录、`F5` 调试。
+> 环境已经配好：VS Code 里装了 **CMake Tools**（`ms-vscode.cmake-tools`），
+> 用户设置里把 STM32Cube 扩展自带的 `cube-cmake` 加进了 `cmake.environment.PATH`，
+> 工程的 `.vscode/settings.json` 指向它。所以 CMake Tools 和上面的任务都能直接用。
 
 ## 新增一个工程时
 

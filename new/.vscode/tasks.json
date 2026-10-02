@@ -2,9 +2,36 @@
   "version": "2.0.0",
   "tasks": [
     {
-      // 默认构建（Ctrl+Shift+B）。2026-09-25 验证：本机 cmake 4.4.0 直接可用，不需要 cube-cmake
+      // 配置 Debug（生成 build/Debug）。改了 CMakeLists.txt 或新增源文件后必须跑
+      "label": "Configure Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "Debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // 配置 Release（生成 build/Release），产物是 build/Release/<工程名>.elf
+      "label": "Configure Release",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // 默认构建（⌘⇧B）。2026-10-02 改动：先自动 Configure 再 Build，
+      // 这样新 clone 下来（没有 build/ 目录）直接 ⌘⇧B 就能过，不用回终端敲 configure
       "label": "Build",
       "type": "shell",
+      "dependsOn": [
+        "Configure Release"
+      ],
+      "dependsOrder": "sequence",
       "command": "cmake",
       "args": [
         "--build",
@@ -17,9 +44,13 @@
       "problemMatcher": []
     },
     {
-      // 调试用的 Debug 构建（F5 会先跑这个）
+      // 调试用的 Debug 构建（F5 会自动先跑这个，见 launch.json 的 preLaunchTask）
       "label": "Build Debug",
       "type": "shell",
+      "dependsOn": [
+        "Configure Debug"
+      ],
+      "dependsOrder": "sequence",
       "command": "cmake",
       "args": [
         "--build",
@@ -28,10 +59,24 @@
       "problemMatcher": []
     },
     {
+      // 万念俱灰时用：删掉 build/ 从零配置再编译（改工程名、换工具链、CMake 缓存出邪门问题时）
+      "label": "从零重建（删 build 重配）",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "rm -rf build && cmake --preset Debug && cmake --preset Release && cmake --build build/Release"
+      ],
+      "problemMatcher": []
+    },
+    {
       // ⭐ 烧录：一键 = 先编译 Release，再用 DAP 写入（2026-08-02 就是用这个点亮的板载 PC13）
       "label": "DAPLink Flash",
       "type": "shell",
-      "dependsOn": "Build",
+      "dependsOn": [
+        "Build"
+      ],
+      "dependsOrder": "sequence",
       "command": "openocd",
       "args": [
         "-f",
