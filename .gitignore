@@ -7,3 +7,8 @@ mx.scratch
 
 # 本机 CMake 覆写（不跟工程走）
 CMakeUserPresets.json
+
+# STM32Cube VS Code 扩展的本机状态（bundle 版本、IDE 记录），每台机器都会变，
+# 每次扩展启动都可能重写 → 不跟工程走（2026-10-02）
+.settings/
+

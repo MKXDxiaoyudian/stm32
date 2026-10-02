@@ -63,9 +63,13 @@ cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
 - **`.elf` 名字由 `CMakeLists.txt` 的 `set(CMAKE_PROJECT_NAME ...)` 决定**，改完名字记得删掉 `build/` 重新 configure ——
   旧的 `CMakeCache.txt` 会把老名字缓存住。
 - **`build/` 不进仓库**（根 `.gitignore` 已挡），`Drivers/` 是**要进仓库**的，这样 clone 下来不用装 CubeMX 就能编译。
-- **每个工程需要自己的 `.clangd`，但它不用你管**：STM32Cube 扩展（`stm32cube-ide-build-cmake`）
-  会在你**用 VS Code 打开该工程目录**时自动生成，内容是按当时选中的 preset 写的
-  （`CompilationDatabase: build/Release` 或 `build/Debug`），同时还会生成 `.vscode/c_cpp_properties.json`。
+- **`.clangd` 由 VS Code 扩展生成，但要满足两个条件才会生成**：STM32Cube 扩展
+  （`stm32cube-ide-build-cmake`）会写 `.clangd` 和 `.vscode/c_cpp_properties.json`，
+  内容按当时的 build 目录写（`build/Release` 或 `build/Debug`）。**光打开工程目录不够**，还要：
+  ① 命令面板跑一次 **「设置 STM32Cube 项目」**（否则报 `active project is not set`）；
+  ② 跑一次 **`CMake: Configure`**（否则报 `Cannot find project build information yet` ——
+  扩展的 build 目录是从 CMake Tools 的 code model 拿的，用终端 `cmake --preset` 它不知道）。
+  卡住就看输出面板的 `STM32Cube CMake build` 通道。
   **不要**从别的工程抄，也**不要**放在仓库根目录 —— 根目录那份会让所有子工程读到指向不存在路径的配置，
   补全反而彻底失效。详见 [`新建工程指南.md`](新建工程指南.md) 的 D 类。
 - 引脚目前**基本都是手写在 `main.c` 的 `USER CODE` 区块里**（PC13 / PA0 没在 `.ioc` 里登记）。

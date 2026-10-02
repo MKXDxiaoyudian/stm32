@@ -1,3 +1,8 @@
 build
 mx.scratch
-!.settings
+.DS_Store
+
+# 2026-10-02：这行原来是 "!.settings"（STM32Cube 扩展生成 .gitignore 时会写它，
+# 主动把 .settings/ 保留进 git，想跨机器锁定 bundle 版本）。
+# 但 .settings/ 是本机扩展状态，每次扩展启动都可能重写，会一直弄脏 git status，
+# 所以去掉反忽略，交给仓库根 .gitignore 的 .settings/ 规则统一忽略。
