@@ -70,11 +70,45 @@ cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
 - **系统时钟还是 HSI 8 MHz、PLL 没开**：`HAL_Delay` 的时基、I2C 时序、串口波特率都按 SYSCLK 算，
   上 I2C/串口之前要先在 Clock Configuration 里配成 **HSE + PLL ×9 = 72 MHz，APB1 /2**。
 
+## 提交与推送（git）
+
+本仓库有两个远程，习惯上两边都推（一份上云，一份本地留底）：
+
+| 远程 | 地址 | 说明 |
+|---|---|---|
+| `origin` | `git@github.com:MKXDxiaoyudian/stm32.git` | GitHub，走 SSH |
+| `backup` | `/Users/zouminyu/stm32-workspace-backup.git` | 本机裸仓库（bare），离线备份 |
+
+日常三步（**在仓库根目录做**）：
+
+```bash
+cd ~/Documents/stm32        # ← 仓库根，不是子工程目录
+
+git status --short          # 1. 看改了哪些文件（?? 是未跟踪，别误提交本机路径）
+git add -A                  # 2. 暂存（只交一个工程：git add button_LED/）
+git commit -m "说明"         # 3. 提交
+git push origin main        # 4a. 推 GitHub
+git push backup main        # 4b. 推本地备份
+```
+
+注意点：
+
+- **新机器先验权**：`ssh -T git@github.com`，看到 `Hi MKXDxiaoyudian!` 才算配好。
+- **提交前先编译一次**，别把编不过的代码推上去。
+- **推错了想撤**：`git reset --soft HEAD~1` 撤回提交但保留改动；已经推上去的就 `git push --force-with-lease origin main`（只在自己一个人的分支上用）。
+- 改历史要小心：本仓库在首次推送前用 `git filter-branch` 剔除过一次大文件（见下），推上去之后再改就得 force push。
+
 ## 关于 git 历史
 
-`new/` 原本是一个独立仓库，推在 GitHub 的
-[`MKXDxiaoyudian/stm32f103-bringup`](https://github.com/MKXDxiaoyudian/stm32f103-bringup)，
-本地备份在 `~/stm32-backup.git`。改成这个合集仓库后，它那 4 条历史提交不再挂在本地了，但两个远程都还留着：
+**这个仓库不是我原来的点灯工程仓库**，是 2026-10-02 新建的合集仓库。三个仓库的关系：
+
+| 仓库 | 装什么 | 状态 |
+|---|---|---|
+| `MKXDxiaoyudian/stm32`（本仓库） | `new` + `button_LED` + `firstdemo` + `firstdemo2` 四个工程的合集 | ✅ 当前在用 |
+| `MKXDxiaoyudian/stm32f103-bringup` | 只有原来那个点灯工程（`new`） | 📦 冻结，内容已并入本仓库 |
+| `~/stm32-backup.git` | 上面那个点灯工程仓库的本地裸备份 | 📦 冻结 |
+
+`new/` 原来那 4 条独立历史提交还在旧的 GitHub 仓库和 `~/stm32-backup.git` 里：
 
 ```
 4f05e6d 恢复可用的 STM32F103C8T6 点灯工程（CubeMX + CMake/Ninja + DAP 烧录）
@@ -83,4 +117,18 @@ cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
 da55fbf docs: README 补「提交与推送」一节（双远程 / 三步流程 / 注意点）
 ```
 
-需要的时候 `git -C ~/Documents/stm32/new remote add old git@github.com:MKXDxiaoyudian/stm32f103-bringup.git` 就能翻回来。
+需要翻旧账：
+
+```bash
+git remote add old git@github.com:MKXDxiaoyudian/stm32f103-bringup.git
+git fetch old && git log --oneline old/main
+```
+
+### 首次推送前做过一次历史瘦身
+
+`button_LED` 最早是用 CubeMX 的 copy-all 生成的，`Drivers/` 有 **67 MB**。这批文件被提交进第一个 commit 后，
+用 `git filter-branch --index-filter` 从**全部历史提交**里剔除，换成了 3.5 MB 的精简集，然后 `git gc --prune=now`。
+结果：仓库 `.git` 从 14 MB 降到 **740 KB**，`button_LED` 的跟踪文件从 925 个降到 87 个。
+
+> 这也是为什么 2026-10-02 那几条提交的 hash 和最初报告的不一样（`c272aec` → `989e4be` 等）——历史被重写过了。
+> 快照备份留在 `~/stm32-snapshot-20261002.tgz`（18 MB，含全部分支未被重写前的状态）。

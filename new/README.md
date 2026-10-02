@@ -106,7 +106,8 @@ cd ~/Documents/stm32        # ← 仓库根，不是 new/
 git status --short          # 1. 看整个仓库改了哪些文件
 git add -A                  # 2. 暂存（只想交本工程的改动：git add new/）
 git commit -m "点灯：…"      # 3. 提交
-git push origin main        # 4. 推到远程（远程还没配，见根 README）
+git push origin main        # 4a. 推 GitHub（MKXDxiaoyudian/stm32）
+git push backup main        # 4b. 推本地裸仓库备份
 ```
 
 几个注意点：
@@ -117,5 +118,6 @@ git push origin main        # 4. 推到远程（远程还没配，见根 README�
 - **提交前先编译一次**：`cmake --build build/Release` 通过再提交，避免把编不过的代码推上去。
 - **推错了想撤**：`git reset --soft HEAD~1` 撤回提交但保留改动，改完重新提交；已经推上去的话再 `git push --force-with-lease origin main`（只在自己一个人的分支上用）。
 - **`Drivers/` 是要进仓库的**，别一时手快把它 ignore 掉 —— 留着才能离线自包含构建。
-  但注意本工程当初用 CubeMX 生成时选了「copy all」，`Drivers/` 有 3.6 MB 是正常的；
-  如果哪天膨胀到几十 MB，把 Code Generator 里改成 **Copy only the necessary library files** 再 GENERATE。
+  本工程的 `Drivers/` 是 **3.6 MB**，这是正常值（CubeMX 勾了「Copy only the necessary library files」的结果）。
+  如果哪天膨胀到几十 MB，说明 Code Generator 被改成了 copy-all，改回 **Copy only the necessary library files**
+  再 GENERATE（`button_LED` 就踩过这个坑：67 MB → 瘦身到 3.5 MB）。
