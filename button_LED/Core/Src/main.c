@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+//#include "stm32f1xx_hal_gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -88,20 +89,10 @@ int main(void)
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
    __HAL_RCC_GPIOC_CLK_ENABLE();//时钟使能函数
-   __HAL_RCC_GPIOA_CLK_ENABLE();//时钟使能函数
-    GPIO_InitTypeDef GPIO_InitStructure;//定义GPIO初始化结构体
-    GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStructure.Pin = GPIO_PIN_13;
-    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStructure.Pull = GPIO_NOPULL;
+  // __HAL_RCC_GPIOA_CLK_ENABLE();//时钟使能函数
 
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStructure );//初始化GPIO
-    GPIO_InitStructure.Pin = GPIO_PIN_0;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStructure );//初始化GPIO
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);//设置引脚13为高电平，关灯
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);//设置引脚13为低电平，开灯
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);//设置引脚0为高电平，关灯
-    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
+  // LED_INIT();
+   ALL_INIT();
 
   /* USER CODE END 2 */
 
@@ -110,8 +101,18 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);//设置引脚13为低电平，开灯
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);//设置引脚0为高电平，关灯
+    if (KEY_PRESSED(GPIO_PIN_1) == 1)
+    {
+      LED_SWITCH(GPIO_PIN_1);/*按下按钮切换LED灯状态*/
+    }
+
+    if(KEY_PRESSED(GPIO_PIN_11) == 1)
+    {
+      LED_SWITCH(GPIO_PIN_2);/*按下按钮切换LED灯状态*/
+    }
+
+    //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);//设置引脚13为低电平，开灯
+   // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
