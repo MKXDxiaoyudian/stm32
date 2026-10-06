@@ -1,0 +1,107 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // 配置 Debug（生成 build/Debug）。改了 CMakeLists.txt 或新增源文件后必须跑
+      "label": "Configure Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "Debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // 配置 Release（生成 build/Release），产物是 build/Release/button_LED.elf
+      "label": "Configure Release",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // 默认构建（⌘⇧B）。2026-10-02 改动：先自动 Configure 再 Build，
+      // 这样新 clone 下来（没有 build/ 目录）直接 ⌘⇧B 就能过，不用回终端敲 configure
+      "label": "Build",
+      "type": "shell",
+      "dependsOn": [
+        "Configure Release"
+      ],
+      "dependsOrder": "sequence",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/Release"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      // 调试用的 Debug 构建（F5 会自动先跑这个，见 launch.json 的 preLaunchTask）
+      "label": "Build Debug",
+      "type": "shell",
+      "dependsOn": [
+        "Configure Debug"
+      ],
+      "dependsOrder": "sequence",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/Debug"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // 万念俱灰时用：删掉 build/ 从零配置再编译（改工程名、换工具链、CMake 缓存出邪门问题时）
+      "label": "从零重建（删 build 重配）",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-c",
+        "rm -rf build && cmake --preset Debug && cmake --preset Release && cmake --build build/Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // ⭐ 烧录：一键 = 先编译 Release，再用 DAP 写入
+      // ⚠️ 2026-10-02 修正：以前这里写的是两个 -f（interface + target），等于**绕过了 openocd.cfg**，
+      //    把 openocd.cfg 里一个会让烧录失败的 reset_config 藏了好几周。
+      //    现在只加载工程自己的 openocd.cfg（它 source 了 interface + target、pin 了 DAP 的 vid:pid、
+      //    并且 reset_config none）。和 F5 调试用的是同一份配置。
+      "label": "DAPLink Flash",
+      "type": "shell",
+      "dependsOn": [
+        "Build"
+      ],
+      "dependsOrder": "sequence",
+      "command": "openocd",
+      "args": [
+        "-f",
+        "${workspaceFolder}/openocd.cfg",
+        "-c",
+        "program ${workspaceFolder}/build/Release/pwm_LED.elf verify reset exit"
+      ],
+      "problemMatcher": []
+    },
+    {
+      // 只连接、不烧写：用来确认 DAP 插好了、芯片认到了
+      "label": "DAPLink 探测（只连不烧）",
+      "type": "shell",
+      "command": "openocd",
+      "args": [
+        "-f",
+        "${workspaceFolder}/openocd.cfg",
+        "-c",
+        "init; exit"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

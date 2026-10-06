@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug with DAPLink",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            // 调试用 Debug 构建；F5 会先跑 preLaunchTask 把它编译出来
+            "executable": "${workspaceFolder}/build/Debug/pwm_LED.elf",
+            "servertype": "openocd",
+            // ⚠️ 2026-09-25 修正：原来写的是 arm-none-eabi-gcc（编译器），gdb 必须是 arm-none-eabi-gdb
+            "gdbPath": "/opt/ST/STM32CubeCLT_1.22.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",
+            "serverpath": "/opt/homebrew/bin/openocd",
+            // 只喂工程自己的 openocd.cfg：它已经 source 了 interface + target，
+            // 并且写了 cmsis_dap_vid_pid 0x0483 0x572a（认准你这支 DAP）
+            "configFiles": [
+                "${workspaceFolder}/openocd.cfg"
+            ],
+            "searchDir": [
+                "/opt/homebrew/share/openocd/scripts"
+            ],
+            "runToEntryPoint": "main",
+            // ⚠️ 2026-09-25 修正：原来写 "Build"，但当时没有这个任务（叫 "Build RM_Motor"）
+            "preLaunchTask": "Build Debug"
+        }
+    ]
+}
