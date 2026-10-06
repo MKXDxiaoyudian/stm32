@@ -7,12 +7,14 @@
 
 | 目录 | 内容 | 状态 |
 |---|---|---|
-| `new/` | 点灯：PC13 + PA0，`HAL_GPIO_TogglePin` + `HAL_Delay(500)` | ✅ 编译 / 烧录 / 点亮全部验证过；工程自带 `README.md`、`.vscode`、`openocd.cfg`，是最完整的一份 |
-| `button_LED/` | 按键控制 LED（`button_LED.ioc`） | 🚧 只把 `new` 的点灯代码搬了过来，按键逻辑还没写；缺 `.clangd` 和 `.gitignore` |
+| `pwm_LED/` | **旋转编码器（EC11）调 PWM 亮度**：TIM3 硬件编码器接口 + TIM2 PWM 输出 | ✅ 编译 / 烧录 / 转速跟手全部验证过。**配置最完整的一份**：`.ioc` 里登记了全部引脚和外设，`README.md` 里有接线表 + 参数换算 + 8 条踩坑记录 |
+| `new/` | 点灯：PC13 + PA0，`HAL_GPIO_TogglePin` + `HAL_Delay(500)` | ✅ 编译 / 烧录 / 点亮全部验证过；自带 `README.md`、`.vscode`、`openocd.cfg` |
+| `button_LED/` | 按键控制 LED（`button_LED.ioc`） | ✅ 已验证。`main.h` 里有一套自写的宏（`LED_INIT` / `KEY_INIT` / `ALL_INIT`）和带超时消抖的 `KEY_IsPressed()`；**引脚是手写在 `USER CODE` 区、`.ioc` 里没登记** |
 | `firstdemo/` | 最早期的练手工程 | 📦 归档，能编译，没配 VS Code 任务 |
 | `firstdemo2/` | 早期练手（`Inc/`+`Src/` 布局，**没有 `.ioc`**，不是 CubeMX 生成的） | 📦 归档 |
 
-`new/README.md` 里有完整的接线表、构建/烧录命令、工具链版本和已知问题，新工程照着它抄。
+每个工程自己的 `README.md` 里有接线表、构建/烧录命令、参数换算和**踩坑记录**。
+新工程照 [`new/README.md`](new/README.md) 抄骨架，照 [`pwm_LED/README.md`](pwm_LED/README.md) 抄"**怎么给工程加一个外设**"（TIM PWM / 编码器接口 / I2C）。
 
 ## 每个工程怎么构建
 
@@ -73,6 +75,23 @@ cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
 - **`.elf` 名字由 `CMakeLists.txt` 的 `set(CMAKE_PROJECT_NAME ...)` 决定**，改完名字记得删掉 `build/` 重新 configure ——
   旧的 `CMakeCache.txt` 会把老名字缓存住。
 - **`build/` 不进仓库**（根 `.gitignore` 已挡），`Drivers/` 是**要进仓库**的，这样 clone 下来不用装 CubeMX 就能编译。
+- **引脚配置有两种风格，别混**：
+  - `pwm_LED/`、`new/` —— 全部在 `.ioc` 里登记，CubeMX 生成 `MX_GPIO_Init()` 和 `HAL_xxx_MspInit()`。
+  - `button_LED/` —— **全手写**在 `main.c` 的 `USER CODE` 区块里（`.ioc` 里一个引脚都没登记）。
+    ⚠️ 手写容易漏掉**时钟使能**、**上下拉**、**复用模式**，而且 CubeMX 不知道你手写了什么，重新生成时两边会打架。
+    **新工程一律用前者。**
+- ⚠️ **CubeMX 只拷贝"用到的" HAL 驱动**（`ProjectManager.LibraryCopy=1`）。只在 Pinout 图上点引脚选信号、
+  **没进左侧 `Categories` 把外设 Mode 配好**，会得到一个很坑的中间态：
+  - 引脚被配成了 `GPIO_MODE_AF_PP`（进了复用模式），**却没有任何外设在驱动它**（悬空 AF，灯不亮、示波器没波形）
+  - `HAL_xxx_MODULE_ENABLED` 仍是注释、`Drivers/` 里**根本没有**对应驱动文件、`CMakeLists.txt` 里没编进去
+  - `MX_xxx_Init()` 压根没生成
+
+  生成后务必自查（完整命令见 [`pwm_LED/README.md`](pwm_LED/README.md) 踩坑第 1 条）：
+  ```bash
+  grep -n "HAL_.*_MODULE_ENABLED" Core/Inc/stm32f1xx_hal_conf.h   # 不能是注释
+  grep -in <外设> cmake/stm32cubemx/CMakeLists.txt                # 要编进去
+  grep -n "MX_.*_Init" Core/Src/main.c                            # 要生成
+  ```
 - **`.clangd` 由 VS Code 扩展生成，但要满足两个条件才会生成**：STM32Cube 扩展
   （`stm32cube-ide-build-cmake`）会写 `.clangd` 和 `.vscode/c_cpp_properties.json`，
   内容按当时的 build 目录写（`build/Release` 或 `build/Debug`）。**光打开工程目录不够**，还要：
@@ -82,9 +101,13 @@ cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
   卡住就看输出面板的 `STM32Cube CMake build` 通道。
   **不要**从别的工程抄，也**不要**放在仓库根目录 —— 根目录那份会让所有子工程读到指向不存在路径的配置，
   补全反而彻底失效。详见 [`新建工程指南.md`](新建工程指南.md) 的 D 类。
-- 引脚目前**基本都是手写在 `main.c` 的 `USER CODE` 区块里**（PC13 / PA0 没在 `.ioc` 里登记）。
-  以后改引脚建议先在 CubeMX 的 Pinout 里配好再生成，比手写寄存器/HAL 初始化靠谱。
-- **系统时钟还是 HSI 8 MHz、PLL 没开**：`HAL_Delay` 的时基、I2C 时序、串口波特率都按 SYSCLK 算，
+- **启动代码放对位置**：`HAL_xxx_Start()` 这类调用必须写在 `main.c` 的 **`USER CODE BEGIN 2`**（在所有 `MX_xxx_Init()` 之后）。
+  写到 `USER CODE BEGIN Init` 会在外设初始化**之前**执行 —— 句柄是 `NULL`、时钟没开、引脚还没切复用，
+  `HAL_xxx_Start()` 直接返回 `HAL_ERROR`，**不报错不警告，就是不工作**。
+- **`USER CODE END WHILE` 和 `USER CODE BEGIN 3` 之间不保证被保留**（有实测被清空的经历）。
+  更保险的位置是 `USER CODE BEGIN 3` / `USER CODE END 3` 之间。重新生成后跑一下
+  `grep -n "<你写的变量名>" Core/Src/main.c` 确认代码还在。
+- **系统时钟还是 HSI 8 MHz、PLL 没开**：`HAL_Delay` 的时基、定时器频率、I2C 时序、串口波特率都按 SYSCLK 算，
   上 I2C/串口之前要先在 Clock Configuration 里配成 **HSE + PLL ×9 = 72 MHz，APB1 /2**。
 
 ## 提交与推送（git）
@@ -101,8 +124,8 @@ cmake --preset Debug && cmake --build build/Debug   # F5 调试要的那份
 ```bash
 cd ~/Documents/stm32        # ← 仓库根，不是子工程目录
 
-git status --short          # 1. 看改了哪些文件（?? 是未跟踪，别误提交本机路径）
-git add -A                  # 2. 暂存（只交一个工程：git add button_LED/）
+git status --short          # 1. 看改了哪些文件（?? 是未跟踪文件）
+git add -A                  # 2. 暂存（只交一个工程：git add pwm_LED/）
 git commit -m "说明"         # 3. 提交
 git push origin main        # 4a. 推 GitHub
 git push backup main        # 4b. 推本地备份
@@ -110,6 +133,9 @@ git push backup main        # 4b. 推本地备份
 
 注意点：
 
+- **`git add -A` 现在是安全的**：仓库根那个 `.vscode/` 已被根 `.gitignore` 的 **`/.vscode/`** 挡住
+  （2026-10-06 加，此前因 `add -A` 误提交过两次）。前导斜杠不能省 —— 写成 `.vscode/` 会连各子工程
+  **故意跟踪的** `.vscode/` 一起匹配。
 - **新机器先验权**：`ssh -T git@github.com`，看到 `Hi MKXDxiaoyudian!` 才算配好。
 - **提交前先编译一次**，别把编不过的代码推上去。
 - **推错了想撤**：`git reset --soft HEAD~1` 撤回提交但保留改动；已经推上去的就 `git push --force-with-lease origin main`（只在自己一个人的分支上用）。
@@ -121,7 +147,7 @@ git push backup main        # 4b. 推本地备份
 
 | 仓库 | 装什么 | 状态 |
 |---|---|---|
-| `MKXDxiaoyudian/stm32`（本仓库） | `new` + `button_LED` + `firstdemo` + `firstdemo2` 四个工程的合集 | ✅ 当前在用 |
+| `MKXDxiaoyudian/stm32`（本仓库） | `pwm_LED` + `new` + `button_LED` + `firstdemo` + `firstdemo2` 五个工程的合集 | ✅ 当前在用 |
 | `MKXDxiaoyudian/stm32f103-bringup` | 只有原来那个点灯工程（`new`） | 📦 冻结，内容已并入本仓库 |
 | `~/stm32-backup.git` | 上面那个点灯工程仓库的本地裸备份 | 📦 冻结 |
 
